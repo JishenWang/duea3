@@ -1,11 +1,5 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:Assets/RPGPP_LT/Textures/rpgpp_lt_sky_a.tga.meta
-guid: c47bcb3cc0c789c4cbbd8719a43edbec
-timeCreated: 1559922614
-licenseType: Store
-========
 guid: c886ccf25a1baca43a63555429d69a02
->>>>>>>> 8a6146a1e828d356512eb7d02b64c1285745d29e:Assets/Free Voxel Christmas Pack/Textures/Christmas_Texture.png.meta
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -69,15 +63,10 @@ TextureImporter:
   ignorePngGamma: 0
   applyGammaDecoding: 0
   platformSettings:
-<<<<<<<< HEAD:Assets/RPGPP_LT/Textures/rpgpp_lt_sky_a.tga.meta
-  - buildTarget: DefaultTexturePlatform
-    maxTextureSize: 2048
-========
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
     maxTextureSize: 2048
     resizeAlgorithm: 0
->>>>>>>> 8a6146a1e828d356512eb7d02b64c1285745d29e:Assets/Free Voxel Christmas Pack/Textures/Christmas_Texture.png.meta
     textureFormat: -1
     textureCompression: 1
     compressionQuality: 50
