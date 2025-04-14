@@ -1,9 +1,15 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/RPGPP_LT/Models/Structures.meta
 guid: 048df2a8bd38ba042971bbb442e597ba
 folderAsset: yes
 timeCreated: 1559921417
 licenseType: Store
+========
+guid: 4e422d4b4a457e741a80def8737ef7fe
+folderAsset: yes
+>>>>>>>> 8a6146a1e828d356512eb7d02b64c1285745d29e:Assets/Free Voxel Christmas Pack/Models/Environment.meta
 DefaultImporter:
+  externalObjects: {}
   userData: 
   assetBundleName: 
   assetBundleVariant: 

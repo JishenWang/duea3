@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/New Folder/新建材质 1.mat.meta
 guid: d8b1ceab6fb675d4abe6f439323f4ca4
+========
+guid: 3670ec4a4f2303648b3941ef0f515107
+>>>>>>>> 8a6146a1e828d356512eb7d02b64c1285745d29e:Assets/Free Voxel Christmas Pack/Materials/Christmas Material.mat.meta
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 2100000
