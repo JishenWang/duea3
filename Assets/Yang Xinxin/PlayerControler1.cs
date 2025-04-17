@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using TMPro;
@@ -8,18 +10,22 @@ public class PlayerControler1 : MonoBehaviour
 
     private float moveX;
     private float moveY;
-    public float moveSpeed = 15;
-    public float rotationSpeed = 180f; // 新增：旋转速度（度/秒）
+    public float moveSpeed = 1;
+
+    private float rotateInput;
+    public float rotationSpeed = 500f;
 
     private int count;
     public TextMeshProUGUI countText;
     public AudioSource clickAudio;
 
+    //Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         count = 0;
-        SetCountText();
+        clickAudio = GetComponent<AudioSource>();
+        //SetCountText();
     }
 
     public void OnMove(InputValue moveValue)
@@ -29,51 +35,41 @@ public class PlayerControler1 : MonoBehaviour
         moveY = moveVector.y;
     }
 
+    public void OnRotate(InputValue rotateValue)
+    {
+        rotateInput = rotateValue.Get<float>();
+    }
+
     private void FixedUpdate()
     {
-        // 移动逻辑
         Vector3 movement = new Vector3(moveX, 0.0f, moveY);
         rb.AddForce(movement * moveSpeed);
 
-        // 新增：旋转逻辑
-        if (movement.magnitude > 0.1f) // 只有有输入时才旋转
-        {
-            // 计算目标旋转角度（将移动方向转换为旋转）
-            float targetAngle = Mathf.Atan2(moveX, moveY) * Mathf.Rad2Deg;
-
-            // 平滑旋转
-            Quaternion targetRotation = Quaternion.Euler(0, targetAngle, 0);
-            rb.rotation = Quaternion.RotateTowards(
-                rb.rotation,
-                targetRotation,
-                rotationSpeed * Time.fixedDeltaTime
-            );
-        }
+        // 应用旋转
+        Quaternion rotation = Quaternion.Euler(0f, rotateInput * rotationSpeed * Time.fixedDeltaTime, 0f);
+        rb.MoveRotation(rb.rotation * rotation);
     }
 
-    void OnTriggerEnter(Collider other)
+    public void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.CompareTag("pickup"))
         {
             other.gameObject.SetActive(false);
             count += 1;
-            SetCountText();
-            if (clickAudio != null) clickAudio.Play();
+            //SetCountText();
+            clickAudio.Play();
         }
-        else if (other.gameObject.CompareTag("pickup2"))
+        if (other.gameObject.CompareTag("pickup2"))
         {
             other.gameObject.SetActive(false);
             count += 2;
-            SetCountText();
-            if (clickAudio != null) clickAudio.Play();
+            //SetCountText();
+            clickAudio.Play();
         }
     }
 
-    void SetCountText()
-    {
-        if (countText != null)
-        {
-            countText.text = "Score:" + count.ToString();
-        }
-    }
+    //public void SetCountText()
+    //{
+        //countText.text = "Score:" + count.ToString();
+    //}
 }
