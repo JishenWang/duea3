@@ -2031,7 +2031,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   walkSpeed: 6
-  runSpeed: 9
+  runSpeed: 8
   jumpHeight: 2
   gravity: -9.81
   rotationSpeed: 10
@@ -23750,7 +23750,7 @@ PrefabInstance:
     - target: {fileID: 1694388104864216425, guid: 678bf8bc91771fa498236de892b83d1d, type: 3}
       propertyPath: m_Controller
       value: 
-      objectReference: {fileID: 9100000, guid: f198b02e0e99f8d458e8beaa4c101d65, type: 2}
+      objectReference: {fileID: 9100000, guid: 6f2a9758f6b5ebf4bbae3ba02e499be1, type: 2}
     - target: {fileID: 1694388104871467657, guid: 678bf8bc91771fa498236de892b83d1d, type: 3}
       propertyPath: m_RootOrder
       value: 4
