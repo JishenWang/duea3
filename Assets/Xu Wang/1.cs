@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class CameraFollow : MonoBehaviour
+public class CameraFollow1 : MonoBehaviour
 {
     [Header("跟随目标")]
     public Transform target;  // 要跟随的人物
