@@ -1,68 +1,63 @@
 using UnityEngine;
 
-[RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement Settings")]
-    [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float rotationSpeed = 10f;
-    [SerializeField] private float gravity = -9.81f;
+    public float moveSpeed = 5f;          // 移动速度
+    public float rotationSpeed = 10f;     // 旋转速度
 
-    [Header("Ground Check")]
-    [SerializeField] private Transform groundCheck;
-    [SerializeField] private float groundDistance = 0.2f; // 减小检测距离
-    [SerializeField] private LayerMask groundMask;
+    [Header("Animation Parameters")]
+    public string dizzyStateName = "Dizzy";  // 默认眩晕状态名称
+    public string runParameterName = "IsRunning"; // 跑步动画参数名
 
-    private CharacterController controller;
-    private Vector3 velocity;
-    private bool isGrounded;
+    private Animator animator;            // 动画控制器
+    private Rigidbody rb;                // 刚体组件
+    private Vector3 movement;             // 移动方向
+    private bool isMoving = false;        // 是否在移动
 
-    private void Awake()
+    void Start()
     {
-        controller = GetComponent<CharacterController>();
+        // 获取组件
+        animator = GetComponent<Animator>();
+        rb = GetComponent<Rigidbody>();
 
-        // 确保地面检测点在角色底部
-        if (groundCheck == null)
+        // 确保初始状态是Dizzy动画
+        if (animator != null)
         {
-            GameObject checkObj = new GameObject("GroundCheck");
-            checkObj.transform.SetParent(transform);
-            checkObj.transform.localPosition = new Vector3(0, -controller.height / 2 + controller.radius, 0);
-            groundCheck = checkObj.transform;
+            animator.Play(dizzyStateName);
         }
     }
 
-    private void Update()
+    void Update()
     {
-        // 更精确的地面检测
-        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask, QueryTriggerInteraction.Ignore);
-
-        if (isGrounded && velocity.y < 0)
-        {
-            velocity.y = -2f;
-        }
-
+        // 获取输入
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
 
-        Vector3 moveDirection = new Vector3(horizontal, 0f, vertical).normalized;
+        // 计算移动方向
+        movement = new Vector3(horizontal, 0f, vertical).normalized;
 
-        if (moveDirection.magnitude >= 0.1f)
+        // 检查是否有移动输入
+        isMoving = movement.magnitude > 0.1f;
+
+        // 控制动画状态
+        if (animator != null)
         {
-            float targetAngle = Mathf.Atan2(moveDirection.x, moveDirection.z) * Mathf.Rad2Deg + Camera.main.transform.eulerAngles.y;
-            float angle = Mathf.LerpAngle(transform.eulerAngles.y, targetAngle, rotationSpeed * Time.deltaTime);
-            transform.rotation = Quaternion.Euler(0f, angle, 0f);
-
-            Vector3 moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
-            controller.Move(moveDir.normalized * moveSpeed * Time.deltaTime);
+            animator.SetBool(runParameterName, isMoving);
         }
-
-        velocity.y += gravity * Time.deltaTime;
-        controller.Move(velocity * Time.deltaTime);
     }
 
-    private void OnDrawGizmosSelected()
+    void FixedUpdate()
     {
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(groundCheck != null ? groundCheck.position : transform.position, groundDistance);
+        // 物理移动
+        if (isMoving)
+        {
+            // 移动角色
+            rb.MovePosition(rb.position + movement * moveSpeed * Time.fixedDeltaTime);
+
+            // 旋转角色朝向移动方向
+            Quaternion targetRotation = Quaternion.LookRotation(movement);
+            rb.rotation = Quaternion.Slerp(rb.transform.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
+        }
     }
 }
