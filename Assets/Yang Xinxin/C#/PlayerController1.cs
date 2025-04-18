@@ -1,37 +1,39 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using TMPro; // 新增：用于文本显示
+using TMPro;
 
 public class PlayerController1 : MonoBehaviour
 {
     [Header("Movement")]
     public float moveSpeed = 5f;
     public float rotationSpeed = 180f;
-    [Header("Camera")]
-    public Transform cameraTransform; // 新增：摄像机参考
 
-    [Header("Scoring")] // 新增：积分相关设置
-    public AudioSource clickAudio; // 拾取音效
-    private int count = 0; // 当前积分
+    [Header("Camera")]
+    public Transform cameraTransform;
+
+    [Header("Scoring")]
+    public AudioSource clickAudio;
+    private int count = 0;
+
+    [Header("UI")]
+    public TextMeshProUGUI countText;
+    public GameObject winMessage;
+    public GameObject trophyHint;
+    public GameObject notEnoughMessage;
 
     private Rigidbody rb;
     private InputAction moveAction;
     private Vector2 moveInput;
-
-    [Header("UI")]
-    public TextMeshProUGUI countText;
-    public GameObject winMessage; // 拖入一个"You Win!"的UI面板
-    public GameObject trophyHint; // 拖入一个"你需要找到奖杯！"的UI面板
+    private bool hasCollidedWithPickup2 = false;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
-        // 自动获取主摄像机（如果没有手动指定）
         if (cameraTransform == null)
             cameraTransform = Camera.main.transform;
 
-        // 加载输入配置
         InputActionAsset inputAsset = Resources.Load<InputActionAsset>("PlayerInput");
         if (inputAsset == null)
         {
@@ -43,8 +45,10 @@ public class PlayerController1 : MonoBehaviour
 
     void Start()
     {
-        // 新增：初始化积分显示
-        SetCountText();
+        // 初始化所有UI为隐藏状态
+        if (winMessage != null) winMessage.SetActive(false);
+        if (trophyHint != null) trophyHint.SetActive(false);
+        if (notEnoughMessage != null) notEnoughMessage.SetActive(false);
     }
 
     void OnEnable() => moveAction.Enable();
@@ -52,7 +56,6 @@ public class PlayerController1 : MonoBehaviour
 
     void Update()
     {
-        // 每帧获取输入（更灵敏）
         moveInput = moveAction.ReadValue<Vector2>();
     }
 
@@ -60,14 +63,18 @@ public class PlayerController1 : MonoBehaviour
     {
         if (moveInput.magnitude > 0.1f)
         {
-            // 1. 基于摄像机方向计算移动
             Vector3 cameraForward = Vector3.Scale(cameraTransform.forward, new Vector3(1, 0, 1)).normalized;
             Vector3 moveDirection = (cameraForward * moveInput.y + cameraTransform.right * moveInput.x).normalized;
 
-            // 2. 应用移动力
             rb.AddForce(moveDirection * moveSpeed, ForceMode.Force);
 
-            // 3. 自动朝向移动方向
+            // 限制最大速度
+            if (rb.velocity.magnitude > moveSpeed)
+            {
+                rb.velocity = rb.velocity.normalized * moveSpeed;
+            }
+
+            // 旋转朝向移动方向
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
             rb.MoveRotation(Quaternion.Slerp(
                 rb.rotation,
@@ -77,39 +84,99 @@ public class PlayerController1 : MonoBehaviour
         }
     }
 
-    // 新增：碰撞检测方法
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.CompareTag("pickup"))
         {
-            other.gameObject.SetActive(false);
-            count += 2;
-            SetCountText();
-            if (clickAudio != null) clickAudio.Play();
+            HandlePickupCollision(other);
         }
         else if (other.gameObject.CompareTag("pickup2"))
         {
-            other.gameObject.SetActive(false);
-            // 显示胜利UI
-            if (winMessage != null) winMessage.SetActive(true);
-            if (clickAudio != null) clickAudio.Play();
+            HandlePickup2Collision(other);
         }
+    }
+
+    private void HandlePickupCollision(Collider pickup)
+    {
+        pickup.gameObject.SetActive(false);
+        count += 5;
+        SetCountText();
+
+        // 检查是否满足胜利条件
+        if (hasCollidedWithPickup2 && count >= 100)
+        {
+            ShowWinMessage();
+        }
+
+        PlayClickSound();
+    }
+
+    private void HandlePickup2Collision(Collider pickup2)
+    {
+        pickup2.gameObject.SetActive(false);
+        hasCollidedWithPickup2 = true;
+
+        if (count >= 100)
+        {
+            ShowWinMessage();
+        }
+        else
+        {
+            ShowNotEnoughMessage();
+        }
+
+        PlayClickSound();
+    }
+
+    private void ShowWinMessage()
+    {
+        if (winMessage != null) winMessage.SetActive(true);
+        if (notEnoughMessage != null) notEnoughMessage.SetActive(false);
+        if (trophyHint != null) trophyHint.SetActive(false);
+    }
+
+    private void ShowNotEnoughMessage()
+    {
+        if (notEnoughMessage != null)
+        {
+            notEnoughMessage.SetActive(true);
+            Invoke("HideNotEnoughMessage", 3f); // 3秒后自动隐藏
+        }
+    }
+
+    private void HideNotEnoughMessage()
+    {
+        if (notEnoughMessage != null)
+        {
+            notEnoughMessage.SetActive(false);
+        }
+    }
+
+    private void PlayClickSound()
+    {
+        if (clickAudio != null) clickAudio.Play();
     }
 
     private void SetCountText()
     {
         if (countText != null)
         {
-            countText.text = "Score: " + count.ToString();
+            countText.text = $"Score: {count}";
 
-            // 分数达到100时显示提示
-            if (count >= 100 && trophyHint != null)
+            // 分数达到100时的处理
+            if (count >= 100)
             {
-                trophyHint.SetActive(true);
+                if (trophyHint != null) trophyHint.SetActive(true);
+
+                // 如果之前已经碰撞过pickup2
+                if (hasCollidedWithPickup2)
+                {
+                    ShowWinMessage();
+                }
             }
-            else if (trophyHint != null)
+            else
             {
-                trophyHint.SetActive(false);
+                if (trophyHint != null) trophyHint.SetActive(false);
             }
         }
     }
