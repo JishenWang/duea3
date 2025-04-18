@@ -6,6 +6,7 @@ TagManager:
   tags:
   - pickup
   - pickup2
+  - Coin
   layers:
   - Default
   - TransparentFX
