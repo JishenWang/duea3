@@ -1991,27 +1991,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 1694388104871626409, guid: 678bf8bc91771fa498236de892b83d1d, type: 3}
   m_PrefabInstance: {fileID: 1935089418}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &134676016
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 134676010}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f68b4cc3e7b710c4fbc945fa5d833642, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  walkSpeed: 6
-  runSpeed: 8
-  jumpHeight: 2
-  gravity: -9.81
-  rotationSmoothTime: 0.1
-  cameraTransform: {fileID: 1840735343}
-  cameraDistance: 20
-  cameraHeight: 7
-  cameraSmoothTime: 0.3
 --- !u!143 &134676017
 CharacterController:
   m_ObjectHideFlags: 0
@@ -2057,7 +2036,7 @@ MonoBehaviour:
   m_ActionEvents:
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 134676016}
+      - m_Target: {fileID: 134676024}
         m_TargetAssemblyTypeName: PersonCamera, Assembly-CSharp
         m_MethodName: OnMove
         m_Mode: 0
@@ -2081,7 +2060,7 @@ MonoBehaviour:
     m_ActionName: Player/Fire[/Mouse/leftButton]
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 134676016}
+      - m_Target: {fileID: 134676024}
         m_TargetAssemblyTypeName: PersonCamera, Assembly-CSharp
         m_MethodName: OnJump
         m_Mode: 0
@@ -2097,7 +2076,7 @@ MonoBehaviour:
     m_ActionName: Player/Jump[/Keyboard/space]
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 134676016}
+      - m_Target: {fileID: 134676024}
         m_TargetAssemblyTypeName: PersonCamera, Assembly-CSharp
         m_MethodName: OnRun
         m_Mode: 0
@@ -2156,6 +2135,27 @@ MonoBehaviour:
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 1840735342}
+--- !u!114 &134676024
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 134676010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f68b4cc3e7b710c4fbc945fa5d833642, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  walkSpeed: 5
+  runSpeed: 8
+  jumpHeight: 2
+  gravity: -9.81
+  rotationSmoothTime: 0.1
+  cameraTransform: {fileID: 1840735343}
+  cameraDistance: 20
+  cameraHeight: 7
+  cameraSmoothTime: 0.3
 --- !u!1001 &137463449
 PrefabInstance:
   m_ObjectHideFlags: 0
