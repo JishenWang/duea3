@@ -27,39 +27,39 @@ public class CameraFollow : MonoBehaviour
 
         // 计算摄像机应该位于的球面坐标位置
         Vector3 targetPosition = target.position;
-
+        
         // 将角度转换为弧度
         float radians = angle * Mathf.Deg2Rad;
-
+        
         // 计算摄像机偏移量
         Vector3 offset = new Vector3(
             0,
             Mathf.Sin(radians) * distance,      // 垂直分量
             -Mathf.Cos(radians) * distance      // 水平分量
         );
-
+        
         // 加上基础高度
         offset.y += height;
-
+        
         // 计算目标摄像机位置
         Vector3 desiredPosition = targetPosition + target.TransformDirection(offset);
-
+        
         // 平滑移动摄像机位置
         transform.position = Vector3.SmoothDamp(
-            transform.position,
-            desiredPosition,
-            ref positionVelocity,
+            transform.position, 
+            desiredPosition, 
+            ref positionVelocity, 
             positionSmoothTime
         );
-
+        
         // 计算摄像机应该看向的方向（稍微看向人物上方，使画面更自然）
         Vector3 lookAtPosition = targetPosition + Vector3.up * height * 0.5f;
-
+        
         // 平滑旋转摄像机
         Quaternion desiredRotation = Quaternion.LookRotation(lookAtPosition - transform.position);
         transform.rotation = Quaternion.Slerp(
-            transform.rotation,
-            desiredRotation,
+            transform.rotation, 
+            desiredRotation, 
             rotationSmoothTime * Time.deltaTime * 10f
         );
     }
