@@ -1,85 +1,116 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using TMPro; // 新增：用于文本显示
 
-[RequireComponent(typeof(Rigidbody))]
 public class PlayerController1 : MonoBehaviour
 {
-    // 移动参数
+    [Header("Movement")]
     public float moveSpeed = 5f;
     public float rotationSpeed = 180f;
+    [Header("Camera")]
+    public Transform cameraTransform; // 新增：摄像机参考
 
-    // 组件引用
+    [Header("Scoring")] // 新增：积分相关设置
+    public AudioSource clickAudio; // 拾取音效
+    private int count = 0; // 当前积分
+
     private Rigidbody rb;
-    private PlayerInput playerInput;
     private InputAction moveAction;
-    private InputAction rotateAction;
+    private Vector2 moveInput;
 
-    // 输入缓存
-    private Vector2 currentMoveInput;
-    private float currentRotateInput;
+    [Header("UI")]
+    public TextMeshProUGUI countText;
+    public GameObject winMessage; // 拖入一个"You Win!"的UI面板
+    public GameObject trophyHint; // 拖入一个"你需要找到奖杯！"的UI面板
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        playerInput = GetComponent<PlayerInput>();
 
-        // 获取输入动作
-        moveAction = playerInput.actions["Move"];
-        rotateAction = playerInput.actions["Rotate"];
+        // 自动获取主摄像机（如果没有手动指定）
+        if (cameraTransform == null)
+            cameraTransform = Camera.main.transform;
+
+        // 加载输入配置
+        InputActionAsset inputAsset = Resources.Load<InputActionAsset>("PlayerInput");
+        if (inputAsset == null)
+        {
+            Debug.LogError("Missing PlayerInput.inputactions in Resources folder!");
+            return;
+        }
+        moveAction = inputAsset.FindAction("Move");
     }
 
-    void OnEnable()
+    void Start()
     {
-        // 注册输入回调
-        moveAction.performed += OnMovePerformed;
-        moveAction.canceled += OnMoveCanceled;
-        rotateAction.performed += OnRotatePerformed;
-        rotateAction.canceled += OnRotateCanceled;
-
-        moveAction.Enable();
-        rotateAction.Enable();
+        // 新增：初始化积分显示
+        SetCountText();
     }
 
-    void OnDisable()
-    {
-        // 注销输入回调
-        moveAction.performed -= OnMovePerformed;
-        moveAction.canceled -= OnMoveCanceled;
-        rotateAction.performed -= OnRotatePerformed;
-        rotateAction.canceled -= OnRotateCanceled;
-    }
+    void OnEnable() => moveAction.Enable();
+    void OnDisable() => moveAction.Disable();
 
-    private void OnMovePerformed(InputAction.CallbackContext ctx)
+    void Update()
     {
-        currentMoveInput = ctx.ReadValue<Vector2>();
-    }
-
-    private void OnMoveCanceled(InputAction.CallbackContext ctx)
-    {
-        currentMoveInput = Vector2.zero;
-    }
-
-    private void OnRotatePerformed(InputAction.CallbackContext ctx)
-    {
-        currentRotateInput = ctx.ReadValue<float>();
-    }
-
-    private void OnRotateCanceled(InputAction.CallbackContext ctx)
-    {
-        currentRotateInput = 0f;
+        // 每帧获取输入（更灵敏）
+        moveInput = moveAction.ReadValue<Vector2>();
     }
 
     void FixedUpdate()
     {
-        // 移动（转换为3D空间方向）
-        Vector3 moveDirection = new Vector3(currentMoveInput.x, 0, currentMoveInput.y);
-        rb.AddForce(moveDirection * moveSpeed, ForceMode.Force);
-
-        // 旋转
-        if (Mathf.Abs(currentRotateInput) > 0.1f)
+        if (moveInput.magnitude > 0.1f)
         {
-            float rotationAmount = currentRotateInput * rotationSpeed * Time.fixedDeltaTime;
-            rb.MoveRotation(rb.rotation * Quaternion.Euler(0, rotationAmount, 0));
+            // 1. 基于摄像机方向计算移动
+            Vector3 cameraForward = Vector3.Scale(cameraTransform.forward, new Vector3(1, 0, 1)).normalized;
+            Vector3 moveDirection = (cameraForward * moveInput.y + cameraTransform.right * moveInput.x).normalized;
+
+            // 2. 应用移动力
+            rb.AddForce(moveDirection * moveSpeed, ForceMode.Force);
+
+            // 3. 自动朝向移动方向
+            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
+            rb.MoveRotation(Quaternion.Slerp(
+                rb.rotation,
+                targetRotation,
+                rotationSpeed * Time.fixedDeltaTime
+            ));
+        }
+    }
+
+    // 新增：碰撞检测方法
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("pickup"))
+        {
+            other.gameObject.SetActive(false);
+            count += 2;
+            SetCountText();
+            if (clickAudio != null) clickAudio.Play();
+        }
+        else if (other.gameObject.CompareTag("pickup2"))
+        {
+            other.gameObject.SetActive(false);
+            // 显示胜利UI
+            if (winMessage != null) winMessage.SetActive(true);
+            if (clickAudio != null) clickAudio.Play();
+        }
+    }
+
+    private void SetCountText()
+    {
+        if (countText != null)
+        {
+            countText.text = "Score: " + count.ToString();
+
+            // 分数达到100时显示提示
+            if (count >= 100 && trophyHint != null)
+            {
+                trophyHint.SetActive(true);
+            }
+            else if (trophyHint != null)
+            {
+                trophyHint.SetActive(false);
+            }
         }
     }
 }

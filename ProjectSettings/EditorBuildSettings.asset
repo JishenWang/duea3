@@ -4,5 +4,20 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/Home page.unity
+    guid: d2a6b9880085e794e821503e38ddfeb8
+  - enabled: 1
+    path: Assets/Wang Jishen/Scenes/JishenWang.unity
+    guid: 9fc0d4010bbf28b4594072e72b8655ab
+  - enabled: 1
+    path: Assets/Xu Wang/Xu Wang.unity
+    guid: d2809ab9b90eea7419d8d90d4c505d35
+  - enabled: 1
+    path: Assets/Scenes/Xinxin Yang.unity
+    guid: 06db8b40c9740a44ea32f0266002716d
+  - enabled: 1
+    path: Assets/Fei Teng/scene/Fei Teng.unity
+    guid: 0985ec6cf479afc4d94c2cf2ddc98c83
   m_configObjects: {}
