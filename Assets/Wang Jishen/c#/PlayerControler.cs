@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using TMPro;
+using UnityEngine.UI;
+
 
 public class PlayerControler : MonoBehaviour
 {
@@ -11,35 +13,35 @@ public class PlayerControler : MonoBehaviour
     private float moveX;
     private float moveY;
     public float moveSpeed = 15;
+    public int eaten;
+    public int totalBalls;
+    public GameObject winPanel;
 
     private int count;
-    private int totalPickups; // ÐÂÔö£º¼ÇÂ¼×Ü½ð±ÒÊý
+    private int totalPickups; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½Ü½ï¿½ï¿½ï¿½ï¿½
     public TextMeshProUGUI countText;
 
-    // ===== ÒôÆµÏµÍ³ =====
+    // ===== ï¿½ï¿½ÆµÏµÍ³ =====
     [Header("AUDIO SETTINGS")]
     public AudioSource coinCollectSound;
 
-    // ===== Ê¤ÀûUI =====
+    // ===== Ê¤ï¿½ï¿½UI =====
     [Header("UI SETTINGS")]
-    public GameObject winPanel; // ÐÂÔö£ºÊ¤ÀûÃæ°å
-    public TextMeshProUGUI winText; // ÐÂÔö£ºÊ¤ÀûÎÄ×Ö
-    private bool gameEnded = false; // ÐÂÔö£ºÓÎÏ·ÊÇ·ñ½áÊø
+    public GameObject winPanel; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¤ï¿½ï¿½ï¿½ï¿½ï¿½
+    public TextMeshProUGUI winText; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    private bool gameEnded = false; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï·ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         count = 0;
-
-        // ¼ÆËã³¡¾°ÖÐËùÓÐpickupºÍpickup2µÄÊýÁ¿
-        totalPickups = GameObject.FindGameObjectsWithTag("pickup").Length
-                     + GameObject.FindGameObjectsWithTag("pickup2").Length;
-
+        eaten = 0;
+        totalBalls = 13;
         SetCountText();
-        InitializeWinUI(); // ³õÊ¼»¯Ê¤ÀûUI
+        InitializeWinUI(); // ï¿½ï¿½Ê¼ï¿½ï¿½Ê¤ï¿½ï¿½UI
     }
 
-    // ÐÂÔö£º³õÊ¼»¯Ê¤ÀûUI
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½Ê¤ï¿½ï¿½UI
     void InitializeWinUI()
     {
         if (winPanel != null) winPanel.SetActive(false);
@@ -48,7 +50,7 @@ public class PlayerControler : MonoBehaviour
 
     public void OnMove(InputValue moveValue)
     {
-        // ÓÎÏ·½áÊøÊ±½ûÖ¹ÒÆ¶¯
+        // ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Ö¹ï¿½Æ¶ï¿½
         if (gameEnded) return;
 
         Vector2 moveVector = moveValue.Get<Vector2>();
@@ -58,7 +60,7 @@ public class PlayerControler : MonoBehaviour
 
     private void FixedUpdate()
     {
-        // ÓÎÏ·½áÊøÊ±½ûÖ¹ÒÆ¶¯
+        // ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Ö¹ï¿½Æ¶ï¿½
         if (gameEnded) return;
 
         Vector3 movement = new Vector3(moveX, 0.0f, moveY);
@@ -71,21 +73,28 @@ public class PlayerControler : MonoBehaviour
         {
             other.gameObject.SetActive(false);
             count += 1;
+            eaten += 1;
             SetCountText();
             PlaySound(coinCollectSound);
-            CheckWinCondition(); // ¼ì²éÊÇ·ñÊ¤Àû
+            CheckWinCondition(); // ï¿½ï¿½ï¿½ï¿½Ç·ï¿½Ê¤ï¿½ï¿½
         }
         if (other.gameObject.CompareTag("pickup2"))
         {
             other.gameObject.SetActive(false);
             count += 2;
+            eaten += 1;
             SetCountText();
             PlaySound(coinCollectSound);
-            CheckWinCondition(); // ¼ì²éÊÇ·ñÊ¤Àû
+            CheckWinCondition(); // ï¿½ï¿½ï¿½ï¿½Ç·ï¿½Ê¤ï¿½ï¿½
+        }
+        if (eaten >= totalBalls)
+        {
+            winPanel.SetActive(true); // ï¿½ï¿½Ê¾Panelï¿½ï¿½WinTextï¿½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½Ê¾ï¿½ï¿½
+
         }
     }
 
-    // ÐÂÔö£º¼ì²éÊ¤ÀûÌõ¼þ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     void CheckWinCondition()
     {
         if (count >= totalPickups)
@@ -94,11 +103,11 @@ public class PlayerControler : MonoBehaviour
         }
     }
 
-    // ÐÂÔö£º½áÊøÓÎÏ·
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï·
     void EndGame()
     {
         gameEnded = true;
-        rb.velocity = Vector3.zero; // Í£Ö¹½ÇÉ«ÒÆ¶¯
+        rb.velocity = Vector3.zero; // Í£Ö¹ï¿½ï¿½É«ï¿½Æ¶ï¿½
         if (winPanel != null) winPanel.SetActive(true);
     }
 
