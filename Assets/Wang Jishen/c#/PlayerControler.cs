@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using TMPro;
+using UnityEngine.UI;
+
 
 public class PlayerControler : MonoBehaviour
 {
@@ -11,6 +13,9 @@ public class PlayerControler : MonoBehaviour
     private float moveX;
     private float moveY;
     public float moveSpeed = 15;
+    public int eaten;
+    public int totalBalls;
+    public GameObject winPanel;
 
     private int count;
     public TextMeshProUGUI countText;
@@ -21,6 +26,8 @@ public class PlayerControler : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         count = 0;
+        eaten = 0;
+        totalBalls = 13;
         SetCountText();
     }
 
@@ -43,6 +50,7 @@ public class PlayerControler : MonoBehaviour
         {
             other.gameObject.SetActive(false);
             count += 1;
+            eaten += 1;
             SetCountText();
             clickAudio.Play();
         }
@@ -50,8 +58,14 @@ public class PlayerControler : MonoBehaviour
         {
             other.gameObject.SetActive(false);
             count += 2;
+            eaten += 1;
             SetCountText();
             clickAudio.Play();
+        }
+        if (eaten >= totalBalls)
+        {
+            winPanel.SetActive(true); // 显示Panel（WinText会随之显示）
+
         }
     }
     public void SetCountText()
