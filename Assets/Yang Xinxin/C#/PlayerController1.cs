@@ -2,182 +2,224 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using TMPro;
 
+[RequireComponent(typeof(Rigidbody))]
 public class PlayerController1 : MonoBehaviour
 {
-    [Header("Movement")]
-    public float moveSpeed = 5f;
-    public float rotationSpeed = 180f;
+    // ===== 基础设置 =====
+    [Header("MOVEMENT SETTINGS")]
+    [Range(5, 15)] public float moveSpeed = 10f;
+    [Range(100, 300)] public float rotationSpeed = 180f;
 
-    [Header("Camera")]
+    [Header("CAMERA REFERENCE")]
     public Transform cameraTransform;
 
-    [Header("Scoring")]
-    public AudioSource clickAudio;
-    private int count = 0;
+    // ===== 输入系统 =====
+    [Header("INPUT SYSTEM")]
+    [Tooltip("直接拖拽PlayerInput.inputactions文件到这里")]
+    public InputActionAsset inputActions;
+    private InputAction moveAction;
+    private Vector2 moveInput;
 
-    [Header("UI")]
-    public TextMeshProUGUI countText;
+    // ===== 音频系统 =====
+    [Header("AUDIO SETTINGS")]
+    public AudioSource coinCollectSound;
+    public AudioSource winSound;
+
+    // ===== 游戏逻辑 =====
+    private int currentScore = 0;
+    private bool hasFoundSpecialItem = false;
+    private bool isGameWon = false; // 新增：游戏胜利状态
+    private Rigidbody rb;
+
+    // ===== UI系统 =====
+    [Header("UI ELEMENTS")]
+    public TextMeshProUGUI scoreText;
     public GameObject winMessage;
     public GameObject trophyHint;
     public GameObject notEnoughMessage;
-
-    private Rigidbody rb;
-    private InputAction moveAction;
-    private Vector2 moveInput;
-    private bool hasCollidedWithPickup2 = false;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
-        if (cameraTransform == null)
-            cameraTransform = Camera.main.transform;
-
-        InputActionAsset inputAsset = Resources.Load<InputActionAsset>("PlayerInput");
-        if (inputAsset == null)
+        // 输入系统初始化
+        if (inputActions != null)
         {
-            Debug.LogError("Missing PlayerInput.inputactions in Resources folder!");
-            return;
+            moveAction = inputActions.FindAction("Move");
         }
-        moveAction = inputAsset.FindAction("Move");
+        else
+        {
+            Debug.LogError("InputActions未分配！请拖拽PlayerInput文件到Inspector", this);
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#endif
+        }
     }
 
     void Start()
     {
-        // 初始化所有UI为隐藏状态
-        if (winMessage != null) winMessage.SetActive(false);
-        if (trophyHint != null) trophyHint.SetActive(false);
-        if (notEnoughMessage != null) notEnoughMessage.SetActive(false);
+        InitializeGame();
     }
 
-    void OnEnable() => moveAction.Enable();
-    void OnDisable() => moveAction.Disable();
+    void InitializeGame()
+    {
+        currentScore = 0;
+        hasFoundSpecialItem = false;
+        isGameWon = false; // 重置胜利状态
+        StopAllAudio();
+        UpdateScoreDisplay();
+        SetUIState(false, false, false);
+
+        // 确保可以移动
+        EnableMovement();
+    }
+
+    void StopAllAudio()
+    {
+        coinCollectSound?.Stop();
+        winSound?.Stop();
+    }
+
+    void OnEnable()
+    {
+        moveAction?.Enable();
+    }
+
+    void OnDisable()
+    {
+        moveAction?.Disable();
+    }
 
     void Update()
     {
-        moveInput = moveAction.ReadValue<Vector2>();
+        if (isGameWon) return; // 胜利后不处理输入
+
+        moveInput = moveAction?.ReadValue<Vector2>() ?? Vector2.zero;
     }
 
     void FixedUpdate()
     {
+        if (isGameWon) return; // 胜利后不处理移动
+
         if (moveInput.magnitude > 0.1f)
         {
-            Vector3 cameraForward = Vector3.Scale(cameraTransform.forward, new Vector3(1, 0, 1)).normalized;
-            Vector3 moveDirection = (cameraForward * moveInput.y + cameraTransform.right * moveInput.x).normalized;
-
-            rb.AddForce(moveDirection * moveSpeed, ForceMode.Force);
-
-            // 限制最大速度
-            if (rb.velocity.magnitude > moveSpeed)
-            {
-                rb.velocity = rb.velocity.normalized * moveSpeed;
-            }
-
-            // 旋转朝向移动方向
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-            rb.MoveRotation(Quaternion.Slerp(
-                rb.rotation,
-                targetRotation,
-                rotationSpeed * Time.fixedDeltaTime
-            ));
+            HandleMovement();
         }
     }
 
-    private void OnTriggerEnter(Collider other)
+    void HandleMovement()
     {
-        if (other.gameObject.CompareTag("pickup"))
+        Vector3 camForward = Vector3.Scale(cameraTransform.forward, new Vector3(1, 0, 1)).normalized;
+        Vector3 moveDir = (camForward * moveInput.y + cameraTransform.right * moveInput.x).normalized;
+
+        rb.AddForce(moveDir * moveSpeed, ForceMode.Force);
+        rb.velocity = Vector3.ClampMagnitude(rb.velocity, moveSpeed);
+
+        if (moveDir != Vector3.zero)
         {
-            HandlePickupCollision(other);
-        }
-        else if (other.gameObject.CompareTag("pickup2"))
-        {
-            HandlePickup2Collision(other);
-        }
-    }
-
-    private void HandlePickupCollision(Collider pickup)
-    {
-        pickup.gameObject.SetActive(false);
-        count += 5;
-        SetCountText();
-
-        // 检查是否满足胜利条件
-        if (hasCollidedWithPickup2 && count >= 100)
-        {
-            ShowWinMessage();
-        }
-
-        PlayClickSound();
-    }
-
-    private void HandlePickup2Collision(Collider pickup2)
-    {
-        pickup2.gameObject.SetActive(false);
-        hasCollidedWithPickup2 = true;
-
-        if (count >= 100)
-        {
-            ShowWinMessage();
-        }
-        else
-        {
-            ShowNotEnoughMessage();
-        }
-
-        PlayClickSound();
-    }
-
-    private void ShowWinMessage()
-    {
-        if (winMessage != null) winMessage.SetActive(true);
-        if (notEnoughMessage != null) notEnoughMessage.SetActive(false);
-        if (trophyHint != null) trophyHint.SetActive(false);
-    }
-
-    private void ShowNotEnoughMessage()
-    {
-        if (notEnoughMessage != null)
-        {
-            notEnoughMessage.SetActive(true);
-            Invoke("HideNotEnoughMessage", 3f); // 3秒后自动隐藏
+            Quaternion targetRot = Quaternion.LookRotation(moveDir);
+            rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRot, rotationSpeed * Time.fixedDeltaTime));
         }
     }
 
-    private void HideNotEnoughMessage()
+    void OnTriggerEnter(Collider other)
     {
-        if (notEnoughMessage != null)
+        if (isGameWon) return; // 胜利后不处理碰撞
+
+        if (other.CompareTag("pickup"))
         {
-            notEnoughMessage.SetActive(false);
+            CollectCoin(other.gameObject);
+        }
+        else if (other.CompareTag("pickup2"))
+        {
+            CollectSpecialItem(other.gameObject);
         }
     }
 
-    private void PlayClickSound()
+    void CollectCoin(GameObject coin)
     {
-        if (clickAudio != null) clickAudio.Play();
+        coin.SetActive(false);
+        currentScore += 5;
+        PlaySound(coinCollectSound);
+        UpdateScoreDisplay();
+        CheckWinCondition();
     }
 
-    private void SetCountText()
+    void CollectSpecialItem(GameObject item)
     {
-        if (countText != null)
+        item.SetActive(false);
+        hasFoundSpecialItem = true;
+        PlaySound(coinCollectSound);
+        CheckWinCondition();
+    }
+
+    void PlaySound(AudioSource sound)
+    {
+        if (sound != null && !sound.isPlaying)
         {
-            countText.text = $"Score: {count}";
-
-            // 分数达到100时的处理
-            if (count >= 100)
-            {
-                if (trophyHint != null) trophyHint.SetActive(true);
-
-                // 如果之前已经碰撞过pickup2
-                if (hasCollidedWithPickup2)
-                {
-                    ShowWinMessage();
-                }
-            }
-            else
-            {
-                if (trophyHint != null) trophyHint.SetActive(false);
-            }
+            sound.Play();
         }
+    }
+
+    void CheckWinCondition()
+    {
+        if (currentScore >= 100 && hasFoundSpecialItem)
+        {
+            ShowWinState();
+        }
+        else if (hasFoundSpecialItem)
+        {
+            ShowNotEnoughCoins();
+        }
+    }
+
+    void ShowWinState()
+    {
+        isGameWon = true; // 标记游戏胜利
+        SetUIState(true, false, false);
+        PlaySound(winSound);
+        DisableMovement(); // 禁用移动
+    }
+
+    void ShowNotEnoughCoins()
+    {
+        SetUIState(false, false, true);
+        Invoke(nameof(HideNotEnoughMessage), 3f);
+    }
+
+    void UpdateScoreDisplay()
+    {
+        if (scoreText != null)
+        {
+            scoreText.text = $"Score: {currentScore}";
+            trophyHint?.SetActive(currentScore >= 100);
+        }
+    }
+
+    void SetUIState(bool win, bool trophy, bool notEnough)
+    {
+        winMessage?.SetActive(win);
+        trophyHint?.SetActive(trophy);
+        notEnoughMessage?.SetActive(notEnough);
+    }
+
+    void HideNotEnoughMessage()
+    {
+        notEnoughMessage?.SetActive(false);
+    }
+
+    // 新增：禁用移动功能
+    void DisableMovement()
+    {
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        rb.isKinematic = true; // 防止物理推动
+    }
+
+    // 新增：启用移动功能
+    void EnableMovement()
+    {
+        rb.isKinematic = false;
     }
 }

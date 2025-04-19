@@ -1,81 +1,198 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using TMPro;
-using UnityEngine.UI;
-using System.Collections;
+using UnityEngine.UI; 
 
 [RequireComponent(typeof(CharacterController), typeof(PlayerInput))]
-public class PersonCamera: MonoBehaviour
+public class PersonCamera : MonoBehaviour
 {
     [Header("移动设置")]
-    public float walkSpeed = 5f;
-    public float runSpeed = 8f;
-    public float jumpHeight = 2f;
-    public float gravity = -9.81f;
-    public float rotationSmoothTime = 0.1f;
+    [Tooltip("行走速度")] public float walkSpeed = 5f;
+    [Tooltip("奔跑速度")] public float runSpeed = 8f;
+    [Tooltip("跳跃高度")] public float jumpHeight = 2f;
+    [Tooltip("重力系数")] public float gravity = -9.81f;
+    [Tooltip("旋转平滑时间")] public float rotationSmoothTime = 0.1f;
 
     [Header("摄像机设置")]
-    public Transform cameraTransform;
-    public float cameraDistance = 5f;
-    public float cameraHeight = 2f;
-    public float cameraSmoothTime = 0.3f;
+    [Tooltip("摄像机参考")] public Transform cameraTransform;
+    [Tooltip("摄像机距离")] public float cameraDistance = 5f;
+    [Tooltip("摄像机高度")] public float cameraHeight = 2f;
+    [Tooltip("摄像机平滑时间")] public float cameraSmoothTime = 0.3f;
+
+
 
     [Header("分数系统")]
-    public TextMeshProUGUI scoreText;
-    public AudioClip coinSound;
+    [Tooltip("分数文本")] public TextMeshProUGUI scoreText;
+    [Tooltip("收集音效")] public AudioClip collectSound;
+
+
+    [Header("胜利系统")]
+    public GameObject winCanvas; // 包含所有胜利UI的Canvas
+    public TextMeshProUGUI winText; // "You Win!"文本
+    public TextMeshProUGUI perfectText; // "Perfect!"文本
+    public Image[] stars; // 星星图片数组（按顺序1-3星）
+    public Sprite goldStar; // 金色星星图片
+    public Sprite grayStar; // 灰色星星图片
+    public float starSpacing = 100f; // 星星之间的间距
+
+
+
+
     private int score = 0;
     private AudioSource audioSource;
+    private const int MAX_SCORE=96;
 
-    [Header("星级评分")]
-    public Image star1;
-    public Image star2;
-    public Image star3;
-    public Sprite goldStar;
-    public Sprite grayStar;
-    public AudioClip starSound;
 
-    [Header("胜利设置")]
-    public GameObject winPanel;
-    public TextMeshProUGUI winText;
-    public AudioClip winSound;
-    public ParticleSystem winEffect;
-    public float winDelay = 1.5f;
-
-    private const int MAX_SCORE = 96;
+    // 组件引用
     private CharacterController controller;
     private PlayerInput playerInput;
+    
+    // 输入状态
     private Vector2 moveInput;
     private bool jumpPressed;
     private bool isRunning;
+    
+    // 运动状态
     private Vector3 playerVelocity;
     private bool isGrounded;
     private float rotationVelocity;
     private Vector3 cameraVelocity;
 
+
     void Awake()
     {
         controller = GetComponent<CharacterController>();
         playerInput = GetComponent<PlayerInput>();
-        audioSource = GetComponent<AudioSource>();
         
-        if (audioSource == null)
-        {
-            audioSource = gameObject.AddComponent<AudioSource>();
-        }
-
         if (cameraTransform == null && Camera.main != null)
         {
             cameraTransform = Camera.main.transform;
         }
 
-        InitializeStars();
+
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        //Cursor.lockState = CursorLockMode.Locked;
+        //Cursor.visible = false;
     }
 
     void Start()
     {
         InitializeCamera();
         UpdateScoreText();
+        InitializeWinUI();
     }
+
+
+    void InitializeWinUI()
+    {
+        if (winCanvas != null) winCanvas.SetActive(false);
+        
+        // 初始设置所有星星为灰色
+        foreach (var star in stars)
+        {
+            if (star != null) star.sprite = grayStar;
+        }
+    }
+
+    
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Coin"))
+        {
+            CollectCoin(other.gameObject);
+        }
+
+        else if (other.CompareTag("Trophy"))
+        {
+            ShowWinResult();
+            other.gameObject.SetActive(false);
+        }
+        
+    }
+
+
+
+    void ShowWinResult()
+    {
+        if (winCanvas == null) return;
+        
+        winCanvas.SetActive(true);
+        int starCount = CalculateStarCount();
+        
+        // 设置星星状态
+        for (int i = 0; i < stars.Length; i++)
+        {
+            if (stars[i] != null)
+            {
+                stars[i].sprite = i < starCount ? goldStar : grayStar;
+                stars[i].gameObject.SetActive(true);
+                
+                // 动态调整星星位置（水平居中排列）
+                float totalWidth = (stars.Length - 1) * starSpacing;
+                float startX = -totalWidth / 2;
+                stars[i].rectTransform.anchoredPosition = 
+                    new Vector2(startX + i * starSpacing, stars[i].rectTransform.anchoredPosition.y);
+            }
+        }
+
+        // 显示对应文本
+        bool isPerfect = starCount == 3;
+        if (winText != null) winText.gameObject.SetActive(!isPerfect);
+        if (perfectText != null) perfectText.gameObject.SetActive(isPerfect);
+
+        // 禁用玩家控制
+        enabled = false;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    int CalculateStarCount()
+    {
+        if (score >= 96) return 3;
+        if (score >= 64) return 2;
+        if (score >= 32) return 1;
+        return 0;
+    }
+
+
+
+
+
+    void CollectCoin(GameObject coin)
+    {
+        // 增加分数
+        score++;
+        UpdateScoreText();
+        
+        // 播放音效
+        if (collectSound != null)
+        {
+            audioSource.PlayOneShot(collectSound);
+        }
+
+        // 禁用金币（可替换为对象池回收）
+        coin.SetActive(false);
+        //或者销毁金币：Destroy(coin);
+    }
+
+
+
+     void UpdateScoreText()
+    {
+        if (scoreText != null)
+        {
+            scoreText.text = $"Score: {score}";
+        }
+    }
+
+
+
+
 
     void Update()
     {
@@ -85,33 +202,8 @@ public class PersonCamera: MonoBehaviour
         UpdateCameraPosition();
     }
 
-    #region 初始化
-    void InitializeStars()
-    {
-        star1.sprite = grayStar;
-        star2.sprite = grayStar;
-        star3.sprite = grayStar;
-        
-        if (winPanel != null)
-        {
-            winPanel.SetActive(false);
-        }
-    }
 
-    void InitializeCamera()
-    {
-        if (cameraTransform != null)
-        {
-            Vector3 targetPosition = transform.position + 
-                                   Vector3.up * cameraHeight + 
-                                   -transform.forward * cameraDistance;
-            cameraTransform.position = targetPosition;
-            cameraTransform.LookAt(transform.position + Vector3.up * cameraHeight * 0.5f);
-        }
-    }
-    #endregion
-
-    #region 输入控制
+    #region 输入系统回调
     public void OnMove(InputAction.CallbackContext context)
     {
         moveInput = context.ReadValue<Vector2>();
@@ -131,125 +223,7 @@ public class PersonCamera: MonoBehaviour
     }
     #endregion
 
-    #region 游戏逻辑
-    void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Coin"))
-        {
-            CollectCoin(other.gameObject);
-        }
-        else if (other.CompareTag("Trophy"))
-        {
-            StartCoroutine(CheckWinCondition());
-        }
-    }
-
-    void CollectCoin(GameObject coin)
-    {
-        score++;
-        UpdateScoreText();
-        
-        if (coinSound != null)
-        {
-            audioSource.PlayOneShot(coinSound);
-        }
-
-        coin.SetActive(false);
-    }
-
-    IEnumerator CheckWinCondition()
-    {
-        // 确保分数更新完成
-        yield return null;
-        
-        if (score >= MAX_SCORE)
-        {
-            WinGame(3);
-        }
-        else if (score >= 64)
-        {
-            WinGame(2);
-        }
-        else if (score >= 32)
-        {
-            WinGame(1);
-        }
-    }
-
-    void UpdateScoreText()
-    {
-        if (scoreText != null)
-        {
-            scoreText.text = $"Score: {score}/{MAX_SCORE}";
-        }
-        UpdateStars();
-    }
-
-    void UpdateStars()
-    {
-        if (score >= 32) star1.sprite = goldStar;
-        if (score >= 64) star2.sprite = goldStar;
-        if (score >= MAX_SCORE) star3.sprite = goldStar;
-    }
-    #endregion
-
-    #region 胜利系统
-    void WinGame(int stars)
-    {
-        StartCoroutine(WinSequence(stars));
-    }
-
-    IEnumerator WinSequence(int stars)
-    {
-        // 禁用控制
-        enabled = false;
-        
-        // 播放胜利音效
-        if (winSound != null)
-        {
-            audioSource.PlayOneShot(winSound);
-        }
-
-        // 触发特效
-        if (winEffect != null)
-        {
-            winEffect.Play();
-        }
-
-        // 渐进式点亮星星
-        yield return StartCoroutine(LightStarsSequentially(stars));
-
-        // 显示胜利面板
-        if (winPanel != null)
-        {
-            winPanel.SetActive(true);
-            if (winText != null)
-            {
-                winText.text = stars == 3 ? "PERFECT!" : "YOU WIN!";
-            }
-        }
-    }
-
-    IEnumerator LightStarsSequentially(int count)
-    {
-        Image[] stars = { star1, star2, star3 };
-        
-        for (int i = 0; i < count; i++)
-        {
-            if (i < stars.Length)
-            {
-                stars[i].sprite = goldStar;
-                if (starSound != null)
-                {
-                    audioSource.PlayOneShot(starSound);
-                }
-                yield return new WaitForSeconds(0.5f);
-            }
-        }
-    }
-    #endregion
-
-    #region 移动和摄像机控制
+    #region 运动控制
     void HandleGroundCheck()
     {
         isGrounded = controller.isGrounded;
@@ -265,6 +239,7 @@ public class PersonCamera: MonoBehaviour
 
         if (inputDirection.magnitude >= 0.1f)
         {
+            // 计算相对于摄像机的方向
             float targetAngle = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
             float smoothedAngle = Mathf.SmoothDampAngle(
                 transform.eulerAngles.y, 
@@ -274,11 +249,15 @@ public class PersonCamera: MonoBehaviour
             );
             transform.rotation = Quaternion.Euler(0f, smoothedAngle, 0f);
 
+            // 计算移动速度
             float currentSpeed = isRunning ? runSpeed : walkSpeed;
+            
+            // 移动角色
             Vector3 moveDirection = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
             controller.Move(moveDirection.normalized * currentSpeed * Time.deltaTime);
         }
 
+        // 应用重力
         playerVelocity.y += gravity * Time.deltaTime;
         controller.Move(playerVelocity * Time.deltaTime);
     }
@@ -291,15 +270,31 @@ public class PersonCamera: MonoBehaviour
             jumpPressed = false;
         }
     }
+    #endregion
+
+    #region 摄像机控制
+    void InitializeCamera()
+    {
+        if (cameraTransform != null)
+        {
+            Vector3 targetPosition = transform.position + 
+                                   Vector3.up * cameraHeight + 
+                                   -transform.forward * cameraDistance;
+            cameraTransform.position = targetPosition;
+            cameraTransform.LookAt(transform.position + Vector3.up * cameraHeight * 0.5f);
+        }
+    }
 
     void UpdateCameraPosition()
     {
         if (cameraTransform == null) return;
 
+        // 计算理想摄像机位置
         Vector3 targetPosition = transform.position + 
                                Vector3.up * cameraHeight + 
                                -transform.forward * cameraDistance;
 
+        // 摄像机碰撞检测
         RaycastHit hit;
         Vector3 rayStart = transform.position + Vector3.up * cameraHeight * 0.5f;
         if (Physics.Linecast(rayStart, targetPosition, out hit))
@@ -307,6 +302,7 @@ public class PersonCamera: MonoBehaviour
             targetPosition = hit.point + (targetPosition - rayStart).normalized * 0.2f;
         }
 
+        // 平滑移动摄像机
         cameraTransform.position = Vector3.SmoothDamp(
             cameraTransform.position, 
             targetPosition, 
@@ -314,7 +310,27 @@ public class PersonCamera: MonoBehaviour
             cameraSmoothTime
         );
 
+        // 摄像机看向角色
         cameraTransform.LookAt(transform.position + Vector3.up * cameraHeight * 0.5f);
     }
     #endregion
+
+    #region 编辑器辅助
+    void OnDrawGizmosSelected()
+    {
+        if (controller != null)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(
+                transform.position + controller.center, 
+                controller.radius
+            );
+            Gizmos.DrawLine(
+                transform.position + controller.center - Vector3.up * (controller.height / 2 - controller.radius),
+                transform.position + controller.center + Vector3.up * (controller.height / 2 - controller.radius)
+            );
+        }
+    }
+
 }
+    #endregion
