@@ -34,6 +34,7 @@ public class PersonCamera : MonoBehaviour
     public Sprite goldStar; // 金色星星图片
     public Sprite grayStar; // 灰色星星图片
     public float starSpacing = 100f; // 星星之间的间距
+    public AudioClip victorySound;
 
 
 
@@ -123,6 +124,13 @@ public class PersonCamera : MonoBehaviour
         
         winCanvas.SetActive(true);
         int starCount = CalculateStarCount();
+
+        // 播放胜利音效
+    if (victorySound != null)
+    {
+        audioSource.PlayOneShot(victorySound);
+    }
+
         
         // 设置星星状态
         for (int i = 0; i < stars.Length; i++)
